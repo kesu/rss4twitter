@@ -97,7 +97,7 @@ class GetRssForUser(webapp2.RequestHandler):
 
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
-        user_name = self.request.get('name')
+        user_name = self.request.get('name').lstrip('@')
 
         time_delta_in_seconds, tweet_since_id, user_rss = self.fetchRSSFromDB(user_name)        
         if ( time_delta_in_seconds < self.timeout and user_rss is not None):
