@@ -1,0 +1,21 @@
+application: rss4twitter
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /assets
+  static_dir: assets
+
+- url: /getrss
+  script: getrss.application
+
+- url: /(.*\.(htm|html|pdf|ico))
+  static_files: static/\1
+  upload: static/(.*\.(htm|html|pdf|ico))
+
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
+  
