@@ -38,7 +38,7 @@ class GetRssForUser(webapp2.RequestHandler):
         self.initialize(request, response)    
         self.twitter_url = "http://twitter.com/"
         self.timeout = 5
-        logging.error("__init__")        
+        logging.info("__init__")        
 
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
@@ -105,13 +105,9 @@ class GetRssForUser(webapp2.RequestHandler):
         else:
             try:
                 last_tweet_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)
-                logging.error("tweet_since_id: " + str(tweet_since_id))
-                logging.error("last_tweet_id:  " + str(last_tweet_id))
-                logging.error(long(last_tweet_id) == tweet_since_id)
                 if last_tweet_id != -1:
                     rss_text = self.tweetsToRSS(user_name, tweet_list)
-                    self.saveRSSToDB(user_name, rss_text, last_tweet_id)
-                    logging.error(len(tweet_list))
+                    self.saveRSSToDB(user_name, rss_text, last_tweet_id)                    
                 else:
                     rss_text = user_rss
             except (HTTPError, URLError):
@@ -130,4 +126,4 @@ env = Environment(autoescape=True,
     cache_size=0, 
     extensions=['jinja2.ext.autoescape'])
 template = env.get_template(atom_template_file)
-logging.error("__end__")
+logging.info("__end__")
