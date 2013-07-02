@@ -7,6 +7,7 @@ from urllib2 import HTTPError, URLError
 
 from datetime import datetime
 from google.appengine.ext import db
+from google.appengine.api import memcache
 
 from jinja2 import Template, Environment, FileSystemLoader
 
@@ -38,6 +39,7 @@ class GetRssForUser(webapp2.RequestHandler):
         self.initialize(request, response)    
         self.twitter_url = "http://twitter.com/"
         self.timeout = 1200
+        self.cache_timeout = 900
 
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
@@ -78,7 +80,17 @@ class GetRssForUser(webapp2.RequestHandler):
         print max(tweet_list.keys())
         return data_since_id, tweet_list
 
-    def fetchRSSFromDB(self, user_name):        
+    def fetchRSSFromDB(self, user_name):
+        cache_result = memcache.get(user_name)        
+        if cache_result:            
+            time_delta = (datetime.now() - cache_result.u_tweet_since_time).total_seconds()
+            if (time_delta < self.timeout):
+                logging.info("Fetched from cache for user:" + user_name + ", time delta is: " + str(time_delta))
+                return cache_result.u_tweet_since_id, cache_result.u_rss
+            else:
+                logging.info("Fetched from cache, but time delta expired for:" + user_name + ", time delta is: " + str(time_delta))
+        else:
+            logging.info("Cache miss for user:" + user_name)
         q = db.GqlQuery("SELECT * FROM UserRss WHERE u_user = :1 LIMIT 1", user_name)
         results = q.get()
         if results:
@@ -87,6 +99,7 @@ class GetRssForUser(webapp2.RequestHandler):
                 logging.info("Timout expired - Entry is " + str(time_delta) + " seconds old. Deleting entry from DB")
                 db.delete(results)
                 return None, None
+            memcache.set(user_name, results, self.cache_timeout)
             return results.u_tweet_since_id, results.u_rss
         else:
             return None, None
@@ -94,6 +107,7 @@ class GetRssForUser(webapp2.RequestHandler):
     def saveRSSToDB(self, user_name, rss_text, last_tweet_id):        
         u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=datetime.now())
         u.put()
+        memcache.set(user_name, u, self.cache_timeout)
 
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
