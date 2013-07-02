@@ -38,7 +38,6 @@ class GetRssForUser(webapp2.RequestHandler):
         self.initialize(request, response)    
         self.twitter_url = "http://twitter.com/"
         self.timeout = 900
-        logging.info("__init__")        
 
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
@@ -99,10 +98,12 @@ class GetRssForUser(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'text/plain'
         user_name = self.request.get('name').lstrip('@')
 
-        time_delta_in_seconds, tweet_since_id, user_rss = self.fetchRSSFromDB(user_name)        
+        time_delta_in_seconds, tweet_since_id, user_rss = self.fetchRSSFromDB(user_name)            
+        logging.info("Time since last fetch for user:" + user_name + " - " + str(time_delta_in_seconds))
         if ( time_delta_in_seconds < self.timeout and user_rss is not None):
             rss_text = user_rss
         else:
+            logging.info("Fetching tweets for " + user_name + " from twitter.com.")
             try:
                 last_tweet_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)
                 if last_tweet_id != -1:
@@ -110,7 +111,7 @@ class GetRssForUser(webapp2.RequestHandler):
                     self.saveRSSToDB(user_name, rss_text, last_tweet_id)                    
                 else:
                     rss_text = user_rss
-            except (HTTPError, URLError):                
+            except (HTTPError, URLError):    
                 return self.redirect("/404.html")
         self.response.headers["Content-Type"] = "application/rss+xml"
         self.response.write(rss_text)
@@ -126,4 +127,4 @@ env = Environment(autoescape=True,
     cache_size=0, 
     extensions=['jinja2.ext.autoescape'])
 template = env.get_template(atom_template_file)
-logging.info("__end__")
+logging.info("Templated loaded")
