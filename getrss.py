@@ -37,7 +37,7 @@ class GetRssForUser(webapp2.RequestHandler):
     def __init__(self, request, response):
         self.initialize(request, response)    
         self.twitter_url = "http://twitter.com/"
-        self.timeout = 5
+        self.timeout = 900
         logging.info("__init__")        
 
     def tweetsToRSS(self, user_name,tweet_list):
@@ -53,7 +53,7 @@ class GetRssForUser(webapp2.RequestHandler):
         try:
             response = urllib2.urlopen(request)
         except HTTPError as e:
-            logging.error("HTTP Error while fetching " + user_name + " Error code:", e.code)
+            logging.error("HTTP Error while fetching " + user_name + " Error code:" + e.code)
             raise
         except URLError as e:
             logging.error("Failed to connect to twitter Reason: " + e.reason)
