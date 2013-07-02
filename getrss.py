@@ -53,7 +53,7 @@ class GetRssForUser(webapp2.RequestHandler):
         try:
             response = urllib2.urlopen(request)
         except HTTPError as e:
-            logging.error("HTTP Error while fetching " + user_name + " Error code:" + e.code)
+            logging.error("HTTP Error while fetching " + user_name + " Error code:" + str(e.code))
             raise
         except URLError as e:
             logging.error("Failed to connect to twitter Reason: " + e.reason)
@@ -110,8 +110,8 @@ class GetRssForUser(webapp2.RequestHandler):
                     self.saveRSSToDB(user_name, rss_text, last_tweet_id)                    
                 else:
                     rss_text = user_rss
-            except (HTTPError, URLError):
-                return self.redirect("https://github.com/404")
+            except (HTTPError, URLError):                
+                return self.redirect("/404.html")
         self.response.headers["Content-Type"] = "application/rss+xml"
         self.response.write(rss_text)
 
