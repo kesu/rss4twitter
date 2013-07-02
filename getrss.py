@@ -2,7 +2,7 @@ import webapp2
 import os
 import logging
 import urllib2
-
+from operator import itemgetter
 from urllib2 import HTTPError, URLError
 
 from datetime import datetime
@@ -45,10 +45,11 @@ class GetRssForUser(webapp2.RequestHandler):
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
             twitter_url="http://twitter.com", 
-            time_now=datetime.now(), 
+            time_now=datetime.now().isoformat("T"), 
             tweet_list=tweet_list)
 
     def getTweetsForUser(self, user_name, max_id):
+        tweet_list = []
         t_url = self.twitter_url + user_name
         headers = { 'User-Agent' : 'Mozilla/5 (Solaris 10) Gecko', 'Accept-Language':'en-US,en;q=0.8'}
         request = urllib2.Request(t_url, None, headers)
@@ -64,20 +65,20 @@ class GetRssForUser(webapp2.RequestHandler):
         stream_container = soup.find ('div', 'stream-container')
         data_since_id = stream_container['data-since-id']
 
-        tweet_list = {}
         if max_id >= data_since_id:
             return None, None
 
         stream_items = stream_container.findAll('li','stream-item')
         for stream_item in stream_items:
             tweet_item_id = stream_item['data-item-id']
-            tweet_item_timestamp = stream_item.find('a','tweet-timestamp')['title']     #time.strptime("4:00 AM - 30 Jun 13", "%I:%M %p - %d %b %y")
+            tweet_item_timestamp = stream_item.find('a','tweet-timestamp')['title']     
+            tweet_item_timestamp = datetime.strptime(tweet_item_timestamp, "%I:%M %p - %d %b %y").isoformat("T") # convert time to RFC 3339 format
             tweet_item_link = stream_item.find('a','tweet-timestamp')['href']
-            #print tweet_item_time
             tweet_text_contents = stream_item.find(None,'tweet-text').contents
             tweet_item_text = ''.join(item.text if isinstance(item, Tag) else item for item in tweet_text_contents)
-            tweet_list[tweet_item_id] = [tweet_item_text, tweet_item_timestamp, tweet_item_link]
+            tweet_list.append([tweet_item_id, tweet_item_text, tweet_item_timestamp, tweet_item_link])
         
+        tweet_list.sort(key=itemgetter(2))        
         return data_since_id, tweet_list
 
     def fetchRSSFromDB(self, user_name):
@@ -117,8 +118,8 @@ class GetRssForUser(webapp2.RequestHandler):
         if (user_rss is None):
             logging.info("Fetching tweets for " + user_name + " from twitter.com.")
             try:
-                last_tweet_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)
-                if tweet_list is not None:
+                last_tweet_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)                
+                if tweet_list:
                     user_rss = self.tweetsToRSS(user_name, tweet_list)
                     logging.info("Save RSS to DB for " + user_name)
                     self.saveRSSToDB(user_name, user_rss, last_tweet_id)                    
