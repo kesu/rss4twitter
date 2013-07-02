@@ -8,6 +8,7 @@ from urllib2 import HTTPError, URLError
 from datetime import datetime
 from google.appengine.ext import db
 from google.appengine.api import memcache
+from google.appengine.runtime import apiproxy_errors
 
 from jinja2 import Template, Environment, FileSystemLoader
 
@@ -76,8 +77,7 @@ class GetRssForUser(webapp2.RequestHandler):
             tweet_text_contents = stream_item.find(None,'tweet-text').contents
             tweet_item_text = ''.join(item.text if isinstance(item, Tag) else item for item in tweet_text_contents)
             tweet_list[tweet_item_id] = [tweet_item_text, tweet_item_timestamp, tweet_item_link]
-
-        print max(tweet_list.keys())
+        
         return data_since_id, tweet_list
 
     def fetchRSSFromDB(self, user_name):
@@ -91,6 +91,7 @@ class GetRssForUser(webapp2.RequestHandler):
                 logging.info("Fetched from cache, but time delta expired for:" + user_name + ", time delta is: " + str(time_delta))
         else:
             logging.info("Cache miss for user:" + user_name)
+        return None, None # Data Store Disable ###########
         q = db.GqlQuery("SELECT * FROM UserRss WHERE u_user = :1 LIMIT 1", user_name)
         results = q.get()
         if results:
@@ -106,8 +107,8 @@ class GetRssForUser(webapp2.RequestHandler):
 
     def saveRSSToDB(self, user_name, rss_text, last_tweet_id):        
         u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=datetime.now())
-        u.put()
         memcache.set(user_name, u, self.cache_timeout)
+        # u.put()  # Data Store Disable ###########
 
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
