@@ -37,7 +37,7 @@ class GetRssForUser(webapp2.RequestHandler):
     def __init__(self, request, response):
         self.initialize(request, response)    
         self.twitter_url = "http://twitter.com/"
-        self.timeout = 900
+        self.timeout = 1200
 
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
@@ -63,7 +63,7 @@ class GetRssForUser(webapp2.RequestHandler):
 
         tweet_list = {}
         if max_id >= data_since_id:
-            return -1, tweet_list
+            return None, None
 
         stream_items = stream_container.findAll('li','stream-item')
         for stream_item in stream_items:
@@ -78,43 +78,39 @@ class GetRssForUser(webapp2.RequestHandler):
         print max(tweet_list.keys())
         return data_since_id, tweet_list
 
-    def fetchRSSFromDB(self, user_name):
-        q = db.GqlQuery("SELECT * FROM UserRss where u_user = :1", user_name)
+    def fetchRSSFromDB(self, user_name):        
+        q = db.GqlQuery("SELECT * FROM UserRss WHERE u_user = :1 LIMIT 1", user_name)
         results = q.get()
         if results:
             time_delta = (datetime.now() - results.u_tweet_since_time).total_seconds()
-            return time_delta, results.u_tweet_since_id, results.u_rss
+            if (time_delta > self.timeout):
+                logging.info("Timout expired - Entry is " + str(time_delta) + " seconds old. Deleting entry from DB")
+                db.delete(results)
+                return None, None
+            return results.u_tweet_since_id, results.u_rss
         else:
-            return self.timeout+1, None, None
+            return None, None
 
-    def saveRSSToDB(self, user_name, rss_text, last_tweet_id):
-        q = db.GqlQuery("SELECT __key__ FROM UserRss where u_user = :1", user_name)
-        results = q.fetch(10)
-        db.delete(results)
+    def saveRSSToDB(self, user_name, rss_text, last_tweet_id):        
         u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=datetime.now())
         u.put()
 
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
         user_name = self.request.get('name').lstrip('@')
-
-        time_delta_in_seconds, tweet_since_id, user_rss = self.fetchRSSFromDB(user_name)            
-        logging.info("Time since last fetch for user:" + user_name + " - " + str(time_delta_in_seconds))
-        if ( time_delta_in_seconds < self.timeout and user_rss is not None):
-            rss_text = user_rss
-        else:
+        tweet_since_id, user_rss = self.fetchRSSFromDB(user_name)                    
+        if (user_rss is None):
             logging.info("Fetching tweets for " + user_name + " from twitter.com.")
             try:
                 last_tweet_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)
-                if last_tweet_id != -1:
-                    rss_text = self.tweetsToRSS(user_name, tweet_list)
-                    self.saveRSSToDB(user_name, rss_text, last_tweet_id)                    
-                else:
-                    rss_text = user_rss
+                if tweet_list is not None:
+                    user_rss = self.tweetsToRSS(user_name, tweet_list)
+                    logging.info("Save RSS to DB for " + user_name)
+                    self.saveRSSToDB(user_name, user_rss, last_tweet_id)                    
             except (HTTPError, URLError):    
                 return self.redirect("/404.html")
         self.response.headers["Content-Type"] = "application/rss+xml"
-        self.response.write(rss_text)
+        self.response.write(user_rss)
 
 application = webapp2.WSGIApplication([
     ('/getrss', GetRssForUser),
