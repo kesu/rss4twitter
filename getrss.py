@@ -92,7 +92,7 @@ class GetRssForUser(webapp2.RequestHandler):
                 #loggin.debug("Fetched from cache, but time delta expired for:" + user_name + ", time delta is: " + str(time_delta))
         #else:
             #loggin.debug("Cache miss for user:" + user_name)
-        #return None, None, None # Data Store Disable ###########
+        return None, None, None # Data Store Disable ###########
         q = db.GqlQuery("SELECT * FROM UserRss WHERE u_user = :1 LIMIT 1", user_name)
         results = q.get()
         if results:
@@ -109,14 +109,14 @@ class GetRssForUser(webapp2.RequestHandler):
     def saveRSSToDB(self, user_name, rss_text, last_tweet_id, tweet_since_time):
         u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=tweet_since_time)
         memcache.set(user_name, u, self.cache_timeout)
-        u.put()  # Data Store Disable ###########
+        #u.put()  # Data Store Disable ###########
 
     def get(self):        
         ua = self.request.headers['User-Agent']
         if "Yahoo Pipes" in ua:
             logging.info("Blocked Yahoo Pipes")
             return self.response.set_status(401)
-            
+
         HTTP_HEADER_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
         user_name = self.request.get('name').lstrip('@')
 
@@ -125,11 +125,11 @@ class GetRssForUser(webapp2.RequestHandler):
         tweet_since_id, user_rss, tweet_since_time = self.fetchRSSFromDB(user_name)
 
         if user_rss:
-            log_compare ="tweet_since_id=" + str(tweet_since_id) + "; h_if_none_match=" + "; h_if_modified_since=" + h_if_modified_since
-            log_compare += "; tweet_since_time=" + tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
-            logging.info (log_compare);
+            # log_compare ="tweet_since_id=" + str(tweet_since_id) + "; h_if_none_match=" + "; h_if_modified_since=" + h_if_modified_since
+            # log_compare += "; tweet_since_time=" + tweet_since_time.strftime(HTTP_HEADER_FORMAT)
+            # logging.info (log_compare);
 
-            if (h_if_none_match == '"'+ str(tweet_since_id) + '"' and h_if_modified_since == tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")):
+            if (h_if_none_match == '"'+ str(tweet_since_id) + '"' and h_if_modified_since == tweet_since_time.strftime(HTTP_HEADER_FORMAT)):
                 logging.debug("Not changed - 304")
                 return self.response.set_status(304)
         if (user_rss is None):
@@ -144,7 +144,7 @@ class GetRssForUser(webapp2.RequestHandler):
             except (HTTPError, URLError):
                 return self.redirect("/404.html")
 
-        self.response.headers["Last-Modified"] = tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self.response.headers["Last-Modified"] = tweet_since_time.strftime(HTTP_HEADER_FORMAT)
         self.response.headers["ETag"] = '"' + str(tweet_since_id) + '"'
         sixty_minutes_in_seconds = 60*60
         expires_time = datetime.utcnow() + timedelta(seconds=sixty_minutes_in_seconds)
