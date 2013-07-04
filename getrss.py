@@ -16,7 +16,7 @@ from BeautifulSoup import BeautifulSoup, Tag
 
 # class Tweet(db.Model):
 #   t_user = db.StringProperty(required=True)
-#   t_tweet_text = db.TextProperty(required=True)  
+#   t_tweet_text = db.TextProperty(required=True)
 #   t_datetime = db.DateTimeProperty()
 
 #   def toDict(self):
@@ -37,15 +37,15 @@ class UserRss(db.Model):
 class GetRssForUser(webapp2.RequestHandler):
 
     def __init__(self, request, response):
-        self.initialize(request, response)    
+        self.initialize(request, response)
         self.twitter_url = "http://twitter.com/"
         self.timeout = 3600
         self.cache_timeout = 3600
 
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
-            twitter_url="http://twitter.com", 
-            time_now=datetime.now().isoformat("T"), 
+            twitter_url="http://twitter.com",
+            time_now=datetime.now().isoformat("T"),
             tweet_list=tweet_list)
 
     def getTweetsForUser(self, user_name, max_id):
@@ -71,19 +71,19 @@ class GetRssForUser(webapp2.RequestHandler):
         stream_items = stream_container.findAll('li','stream-item')
         for stream_item in stream_items:
             tweet_item_id = stream_item['data-item-id']
-            tweet_item_timestamp = stream_item.find('a','tweet-timestamp')['title']     
+            tweet_item_timestamp = stream_item.find('a','tweet-timestamp')['title']
             tweet_item_timestamp = datetime.strptime(tweet_item_timestamp, "%I:%M %p - %d %b %y").isoformat("T") # convert time to RFC 3339 format
             tweet_item_link = stream_item.find('a','tweet-timestamp')['href']
             tweet_text_contents = stream_item.find(None,'tweet-text').contents
             tweet_item_text = ''.join(item.text if isinstance(item, Tag) else item for item in tweet_text_contents)
             tweet_list.append([tweet_item_id, tweet_item_text, tweet_item_timestamp, tweet_item_link])
-        
-        tweet_list.sort(key=itemgetter(2))        
+
+        tweet_list.sort(key=itemgetter(2))
         return data_since_id, tweet_list
 
     def fetchRSSFromDB(self, user_name):
-        cache_result = memcache.get(user_name)        
-        if cache_result:            
+        cache_result = memcache.get(user_name)
+        if cache_result:
             time_delta = (datetime.now() - cache_result.u_tweet_since_time).total_seconds()
             if (time_delta < self.timeout):
                 #loggin.debug("Fetched from cache for user:" + user_name + ", time delta is: " + str(time_delta))
@@ -106,7 +106,7 @@ class GetRssForUser(webapp2.RequestHandler):
         else:
             return None, None, None
 
-    def saveRSSToDB(self, user_name, rss_text, last_tweet_id, tweet_since_time):        
+    def saveRSSToDB(self, user_name, rss_text, last_tweet_id, tweet_since_time):
         u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=tweet_since_time)
         memcache.set(user_name, u, self.cache_timeout)
         u.put()  # Data Store Disable ###########
@@ -116,11 +116,11 @@ class GetRssForUser(webapp2.RequestHandler):
         user_name = self.request.get('name').lstrip('@')
 
         h_if_modified_since = self.request.headers.get('If-Modified-Since','None')
-        h_if_none_match = self.request.headers.get('If-None-Match','None')        
+        h_if_none_match = self.request.headers.get('If-None-Match','None')
         tweet_since_id, user_rss, tweet_since_time = self.fetchRSSFromDB(user_name)
-               
-        if user_rss:            
-            log_compare ="tweet_since_id=" + str(tweet_since_id) + "; h_if_none_match=" + "; h_if_modified_since=" + h_if_modified_since 
+
+        if user_rss:
+            log_compare ="tweet_since_id=" + str(tweet_since_id) + "; h_if_none_match=" + "; h_if_modified_since=" + h_if_modified_since
             log_compare += "; tweet_since_time=" + tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
             logging.info (log_compare);
 
@@ -130,15 +130,15 @@ class GetRssForUser(webapp2.RequestHandler):
         if (user_rss is None):
             #loggin.debug("Fetching tweets for " + user_name + " from twitter.com.")
             try:
-                tweet_since_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)             
+                tweet_since_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)
                 if tweet_list:
                     user_rss = self.tweetsToRSS(user_name, tweet_list)
                     #loggin.debug("Save RSS to DB for " + user_name)
                     tweet_since_time = datetime.utcnow()
-                    self.saveRSSToDB(user_name, user_rss, tweet_since_id, tweet_since_time)                    
-            except (HTTPError, URLError):    
+                    self.saveRSSToDB(user_name, user_rss, tweet_since_id, tweet_since_time)
+            except (HTTPError, URLError):
                 return self.redirect("/404.html")
-        
+
         self.response.headers["Last-Modified"] = tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
         self.response.headers["ETag"] = '"' + str(tweet_since_id) + '"'
         sixty_minutes_in_seconds = 60*60
@@ -153,10 +153,10 @@ application = webapp2.WSGIApplication([
 ], debug=False)
 
 atom_template_file = 'atom.tpl'
-env = Environment(autoescape=True, 
+env = Environment(autoescape=True,
     loader=FileSystemLoader('.'),
     auto_reload=True,
-    cache_size=0, 
+    cache_size=0,
     extensions=['jinja2.ext.autoescape'])
 template = env.get_template(atom_template_file)
 #loggin.debug("Templated loaded")
