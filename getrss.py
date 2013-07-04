@@ -5,7 +5,7 @@ import urllib2
 from operator import itemgetter
 from urllib2 import HTTPError, URLError
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from google.appengine.ext import db
 from google.appengine.api import memcache
 from google.appengine.runtime import apiproxy_errors
@@ -39,8 +39,8 @@ class GetRssForUser(webapp2.RequestHandler):
     def __init__(self, request, response):
         self.initialize(request, response)    
         self.twitter_url = "http://twitter.com/"
-        self.timeout = 1200
-        self.cache_timeout = 900
+        self.timeout = 3600
+        self.cache_timeout = 3600
 
     def tweetsToRSS(self, user_name,tweet_list):
         return template.render(user_name=user_name,
@@ -86,51 +86,71 @@ class GetRssForUser(webapp2.RequestHandler):
         if cache_result:            
             time_delta = (datetime.now() - cache_result.u_tweet_since_time).total_seconds()
             if (time_delta < self.timeout):
-                logging.info("Fetched from cache for user:" + user_name + ", time delta is: " + str(time_delta))
-                return cache_result.u_tweet_since_id, cache_result.u_rss
-            else:
-                logging.info("Fetched from cache, but time delta expired for:" + user_name + ", time delta is: " + str(time_delta))
-        else:
-            logging.info("Cache miss for user:" + user_name)
-        return None, None # Data Store Disable ###########
+                #loggin.debug("Fetched from cache for user:" + user_name + ", time delta is: " + str(time_delta))
+                return cache_result.u_tweet_since_id, cache_result.u_rss, cache_result.u_tweet_since_time
+            #else:
+                #loggin.debug("Fetched from cache, but time delta expired for:" + user_name + ", time delta is: " + str(time_delta))
+        #else:
+            #loggin.debug("Cache miss for user:" + user_name)
+        #return None, None, None # Data Store Disable ###########
         q = db.GqlQuery("SELECT * FROM UserRss WHERE u_user = :1 LIMIT 1", user_name)
         results = q.get()
         if results:
             time_delta = (datetime.now() - results.u_tweet_since_time).total_seconds()
             if (time_delta > self.timeout):
-                logging.info("Timout expired - Entry is " + str(time_delta) + " seconds old. Deleting entry from DB")
+                #loggin.debug("Timout expired - Entry is " + str(time_delta) + " seconds old. Deleting entry from DB")
                 db.delete(results)
-                return None, None
+                return None, None, None
             memcache.set(user_name, results, self.cache_timeout)
-            return results.u_tweet_since_id, results.u_rss
+            return results.u_tweet_since_id, results.u_rss, results.u_tweet_since_time
         else:
-            return None, None
+            return None, None, None
 
-    def saveRSSToDB(self, user_name, rss_text, last_tweet_id):        
-        u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=datetime.now())
+    def saveRSSToDB(self, user_name, rss_text, last_tweet_id, tweet_since_time):        
+        u = UserRss(u_user=user_name, u_rss=rss_text, u_tweet_since_id=long(last_tweet_id),u_tweet_since_time=tweet_since_time)
         memcache.set(user_name, u, self.cache_timeout)
-        # u.put()  # Data Store Disable ###########
+        u.put()  # Data Store Disable ###########
 
     def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
+        HTTP_HEADER_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
         user_name = self.request.get('name').lstrip('@')
-        tweet_since_id, user_rss = self.fetchRSSFromDB(user_name)                    
+
+        h_if_modified_since = self.request.headers.get('If-Modified-Since','None')
+        h_if_none_match = self.request.headers.get('If-None-Match','None')        
+        tweet_since_id, user_rss, tweet_since_time = self.fetchRSSFromDB(user_name)
+               
+        if user_rss:            
+            log_compare ="tweet_since_id=" + str(tweet_since_id) + "; h_if_none_match=" + "; h_if_modified_since=" + h_if_modified_since 
+            log_compare += "; tweet_since_time=" + tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            logging.info (log_compare);
+
+            if (h_if_none_match == '"'+ str(tweet_since_id) + '"'and h_if_modified_since == tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")):
+                logging.debug("Not changed - 304")
+                return self.response.set_status(304)
         if (user_rss is None):
-            logging.info("Fetching tweets for " + user_name + " from twitter.com.")
+            #loggin.debug("Fetching tweets for " + user_name + " from twitter.com.")
             try:
-                last_tweet_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)                
+                tweet_since_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)             
                 if tweet_list:
                     user_rss = self.tweetsToRSS(user_name, tweet_list)
-                    logging.info("Save RSS to DB for " + user_name)
-                    self.saveRSSToDB(user_name, user_rss, last_tweet_id)                    
+                    #loggin.debug("Save RSS to DB for " + user_name)
+                    tweet_since_time = datetime.utcnow()
+                    self.saveRSSToDB(user_name, user_rss, tweet_since_id, tweet_since_time)                    
             except (HTTPError, URLError):    
                 return self.redirect("/404.html")
-        self.response.headers["Content-Type"] = "application/rss+xml"
+        
+        self.response.headers["Last-Modified"] = tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self.response.headers["ETag"] = '"' + str(tweet_since_id) + '"'
+        sixty_minutes_in_seconds = 60*60
+        expires_time = datetime.utcnow() + timedelta(seconds=sixty_minutes_in_seconds)
+        self.response.headers["Expires"] = expires_time.strftime(HTTP_HEADER_FORMAT)
+        self.response.headers["Cache-Control"] = "public, max-age=%s" % sixty_minutes_in_seconds
+
         self.response.write(user_rss)
 
 application = webapp2.WSGIApplication([
     ('/getrss', GetRssForUser),
-], debug=True)
+], debug=False)
 
 atom_template_file = 'atom.tpl'
 env = Environment(autoescape=True, 
@@ -139,4 +159,4 @@ env = Environment(autoescape=True,
     cache_size=0, 
     extensions=['jinja2.ext.autoescape'])
 template = env.get_template(atom_template_file)
-logging.info("Templated loaded")
+#loggin.debug("Templated loaded")

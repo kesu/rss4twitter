@@ -6,7 +6,7 @@
 
   <title>RSS 4 Twitter</title>
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <meta content="RSS generator for Twitter" name="description">
+  <meta content="RSS generator for Twitter - Donate" name="description">
   <meta content="" name="author"><!-- Le styles -->
   <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
   <style type="text/css">
@@ -68,7 +68,7 @@
     <div class="masthead">
       <ul class="nav nav-pills pull-right">
         <li class="active">
-          <a href="#">Home</a>
+          <a href="/">Home</a>
         </li>
 
         <li>
@@ -88,57 +88,53 @@
     </div>
     <hr>
 
-    <p class="text-error">UPDATE: Due to heavy traffic, tweet updates are
-    increased to once per hour (from 15 minutes).</p>
+    <p class="lead">Make a Donation. Support the site and help to keep it
+    going!</p>
 
-    <div class="jumbotron">
-      <h1>Get your tweets via RSS!</h1>
+    <p>This site is developed and supported by one person working on his spare
+    time. It was born out of a personal need to get my twitter feeds via RSS
+    after twitter shutdown their RSS service.</p>
 
-      <p class="lead">Twitter has killed off their RSS feeds - this site is an
-      attempt to provide an alternative.</p>
+    <p>Since then I have found that there are a lot of people who appreciate
+    such a service.</p>
 
-      <form action="/getrss" class="well form-search" id="user_name_form"
-      method="get" name="user_name_form">
-        <input class="input-xlarge" name="name" placeholder="Twitter user name"
-        type="text"> <a class="btn btn-primary" href="" onclick=
-        "if (document.user_name_form.name.value) { parentNode.submit();return false; }">
-        Get RSS</a> <!-- <button type="submit" class="btn">Search</button> -->
-      </form>
+    <p></p>
 
-      <p>Simply enter a twitter user name to get an RSS feed for the user's
-      timeline.</p>
+    <p>I really hate to have to ask for support and donations from the site
+    users. But the site itself generates zero funds, and costs me money to pay
+    for hosting services.</p>
 
-      <p class="text-info">Hashtag support coming soon. Support our hosting
-      costs by <strong><a href="donate.html" style=
-      "text-decoration: underline;">Donating.</a></strong></p>
+    <p>So, if you are feeling generous, or just want to help support the site,
+    any size donations are greatly appreciated. The only current method to
+    donate is via PayPal.</p>
+
+    <p>Again, thanks for the support and for the great feedback that I am
+    receiving from all of you. Your comments help this site become better and
+    more useful.</p>
+
+    <div class="row-fluid marketing">
+      <div class="span6">
+        <h4>Donate via Paypal</h4>
+
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post"
+        target="_top">
+          <input name="cmd" type="hidden" value="_s-xclick"> <input name=
+          "hosted_button_id" type="hidden" value="JXJM5FGMQVHUS"> <input alt=
+          "PayPal - The safer, easier way to pay online!" name="submit" src=
+          "https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" type=
+          "image"> <img alt="" border="0" height="1" src=
+          "https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1">
+        </form>
+      </div>
     </div>
 
     <div class="row-fluid">
-      <div class="span2"></div>
-
-      <div class="span8">
-        <iframe frameborder="0" height="60" marginwidth="0" scrolling="no" src=
-        "http://rcm-na.amazon-adsystem.com/e/cm?t=rs4tw-20&o=1&p=26&l=ur1&category=primeent&banner=0Z17THSPYXCS0FZB7YR2&f=ifr"
+      <div class="span12">
+        <iframe frameborder="0" height="60" marginheight="0" marginwidth="0"
+        scrolling="no" src=
+        "http://rcm-na.amazon-adsystem.com/e/cm?t=rs4tw-20&o=1&p=13&l=ez&f=ifr&f=ifr"
         style="border:none;" width="468"></iframe>
-        
       </div>
-
-      <div class="span2"></div>
-    </div>
-
-    <div class="row-fluid">
-      <div class="span5"></div>
-
-      <div class="span2">
-        <a class="twitter-share-button" data-text=
-        "Check this out - RSS generator for twitter" data-url=
-        "http://rss4twitter.appspot.com" href=
-        "https://twitter.com/share">Tweet</a><script>
-!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');
-        </script>
-      </div>
-
-      <div class="span5"></div>
     </div>
     <hr>
     <!-- <div class="footer">
