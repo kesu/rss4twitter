@@ -111,7 +111,12 @@ class GetRssForUser(webapp2.RequestHandler):
         memcache.set(user_name, u, self.cache_timeout)
         u.put()  # Data Store Disable ###########
 
-    def get(self):
+    def get(self):        
+        ua = self.request.headers['User-Agent']
+        if "Yahoo Pipes" in ua:
+            logging.info("Blocked Yahoo Pipes")
+            return self.response.set_status(401)
+            
         HTTP_HEADER_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
         user_name = self.request.get('name').lstrip('@')
 
@@ -124,7 +129,7 @@ class GetRssForUser(webapp2.RequestHandler):
             log_compare += "; tweet_since_time=" + tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
             logging.info (log_compare);
 
-            if (h_if_none_match == '"'+ str(tweet_since_id) + '"'and h_if_modified_since == tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")):
+            if (h_if_none_match == '"'+ str(tweet_since_id) + '"' and h_if_modified_since == tweet_since_time.strftime("%a, %d %b %Y %H:%M:%S GMT")):
                 logging.debug("Not changed - 304")
                 return self.response.set_status(304)
         if (user_rss is None):
