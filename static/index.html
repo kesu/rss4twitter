@@ -4,9 +4,9 @@
 <head>
   <meta charset="utf-8">
 
-  <title>RSS 4 Twitter</title>
+  <title>RSS4Twitter - RSS generator for Twitter</title>
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <meta content="RSS generator for Twitter" name="description">
+  <meta content="Generate RSS feeds for twitter users. Get up to date tweets via RSS!" name="description">
   <meta content="" name="author"><!-- Le styles -->
   <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
   <style type="text/css">
@@ -88,15 +88,15 @@
     </div>
     <hr>
 
-    <p class="text-error">UPDATE: Due to heavy traffic, tweet updates are
-    increased to once per hour (from 15 minutes).</p>
-
     <div class="jumbotron">
       <h1>Get your tweets via RSS!</h1>
 
       <p class="lead">Twitter has killed off their RSS feeds - this site is an
       attempt to provide an alternative.</p>
 
+      <p class="text-error">UPDATE: Due to heavy traffic, tweets are updated once 
+      per hour (instead of 15 minutes).</p>
+      
       <form action="/getrss" class="well form-search" id="user_name_form"
       method="get" name="user_name_form">
         <input class="input-xlarge" name="name" placeholder="Twitter user name"
@@ -105,12 +105,16 @@
         Get RSS</a> <!-- <button type="submit" class="btn">Search</button> -->
       </form>
 
-      <p>Simply enter a twitter user name to get an RSS feed for the user's
-      timeline.</p>
+      <!-- <p>Simply enter a twitter user name to get an RSS feed for the user's
+      timeline.</p> -->
 
       <p class="text-info">Hashtag support coming soon. Support our hosting
       costs by <strong><a href="donate.html" style=
       "text-decoration: underline;">Donating.</a></strong></p>
+      <p>Donors get early access to new features and dedicated URL with less 
+      traffic/faster updates.</p>
+
+
     </div>
 
     <div class="row-fluid">

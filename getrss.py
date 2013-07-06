@@ -2,6 +2,7 @@ import webapp2
 import os
 import logging
 import urllib2
+
 from operator import itemgetter
 from urllib2 import HTTPError, URLError
 
@@ -117,8 +118,15 @@ class GetRssForUser(webapp2.RequestHandler):
             logging.info("Blocked Yahoo Pipes")
             return self.response.set_status(401)
 
+
+
         HTTP_HEADER_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
         user_name = self.request.get('name').lstrip('@')
+
+        alt_url = "http://kj-app.appspot.com/getrss?name="
+        # alt_url = "http://localhost:11080/getrss?name="
+
+        #self.redirect (alt_url + str(user_name))
 
         h_if_modified_since = self.request.headers.get('If-Modified-Since','None')
         h_if_none_match = self.request.headers.get('If-None-Match','None')
@@ -150,7 +158,7 @@ class GetRssForUser(webapp2.RequestHandler):
         expires_time = datetime.utcnow() + timedelta(seconds=sixty_minutes_in_seconds)
         self.response.headers["Expires"] = expires_time.strftime(HTTP_HEADER_FORMAT)
         self.response.headers["Cache-Control"] = "public, max-age=%s" % sixty_minutes_in_seconds
-
+        self.response.headers["Content-Type"] = "application/atom+xml"
         self.response.write(user_rss)
 
 application = webapp2.WSGIApplication([

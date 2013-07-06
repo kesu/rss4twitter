@@ -1,3 +1,12 @@
 blacklist:
 - subnet: 216.223.90.33
   description: GreaterSudbury ColdFusion
+
+- subnet: 209.131.41.48
+  description: Yahoo Pipes 1
+
+- subnet: 209.131.41.49
+  description: Yahoo Pipes 2
+
+
+
