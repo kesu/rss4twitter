@@ -15,6 +15,8 @@ from jinja2 import Template, Environment, FileSystemLoader
 
 from BeautifulSoup import BeautifulSoup, Tag
 
+import cherrypy
+
 # class Tweet(db.Model):
 #   t_user = db.StringProperty(required=True)
 #   t_tweet_text = db.TextProperty(required=True)
