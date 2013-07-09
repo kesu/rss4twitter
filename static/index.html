@@ -100,9 +100,14 @@
       <form action="/getrss" class="well form-search" id="user_name_form"
       method="get" name="user_name_form">
         <input class="input-xlarge" name="name" placeholder="Twitter user name"
-        type="text"> <a class="btn btn-primary" href="" onclick=
+        type="text">        
+        <a class="btn btn-primary" href="" onclick=
         "if (document.user_name_form.name.value) { parentNode.submit();return false; }">
         Get RSS</a> <!-- <button type="submit" class="btn">Search</button> -->
+        <label class="checkbox">
+        <input type="checkbox" name="reverse">
+        Reverse order
+        </label>
       </form>
 
       <!-- <p>Simply enter a twitter user name to get an RSS feed for the user's

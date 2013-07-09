@@ -73,13 +73,15 @@ class GetRssForUser(webapp2.RequestHandler):
         for stream_item in stream_items:
             tweet_item_id = stream_item['data-item-id']
             tweet_item_timestamp = stream_item.find('a','tweet-timestamp')['title']
-            tweet_item_timestamp = datetime.strptime(tweet_item_timestamp, "%I:%M %p - %d %b %y").isoformat("T") # convert time to RFC 3339 format
+            if "(GMT" in tweet_item_timestamp:
+                tweet_item_timestamp = datetime.strptime( tweet_item_timestamp.split(' (')[0], "%I:%M %p - %d %b %y").isoformat("T") # convert time to RFC 3339 format
+            else:
+                tweet_item_timestamp = datetime.strptime(tweet_item_timestamp, "%I:%M %p - %d %b %y").isoformat("T") # convert time to RFC 3339 format
             tweet_item_link = stream_item.find('a','tweet-timestamp')['href']
             tweet_text_contents = stream_item.find(None,'tweet-text').contents
             tweet_item_text = ''.join(item.text if isinstance(item, Tag) else item for item in tweet_text_contents)
             tweet_list.append([tweet_item_id, tweet_item_text, tweet_item_timestamp, tweet_item_link])
-
-        tweet_list.sort(key=itemgetter(2))
+        
         return data_since_id, tweet_list
 
     def fetchRSSFromDB(self, user_name):
@@ -112,7 +114,8 @@ class GetRssForUser(webapp2.RequestHandler):
         memcache.set(user_name, u, self.cache_timeout)
         #u.put()  # Data Store Disable ###########
 
-    def get(self):        
+    def get(self):
+        logging.info("reverse=" + self.request.get('reverse','off'))
         ua = self.request.headers['User-Agent']
         if "Yahoo Pipes" in ua:
             logging.info("Blocked Yahoo Pipes")
@@ -144,6 +147,9 @@ class GetRssForUser(webapp2.RequestHandler):
             #loggin.debug("Fetching tweets for " + user_name + " from twitter.com.")
             try:
                 tweet_since_id, tweet_list = self.getTweetsForUser(user_name, tweet_since_id)
+                if "off" is self.request.get('reverse','off'):
+                    tweet_list.sort(key=itemgetter(2))
+
                 if tweet_list:
                     user_rss = self.tweetsToRSS(user_name, tweet_list)
                     #loggin.debug("Save RSS to DB for " + user_name)
