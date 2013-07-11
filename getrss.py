@@ -2,6 +2,7 @@ import webapp2
 import os
 import logging
 import urllib2
+import urllib
 
 from operator import itemgetter
 from urllib2 import HTTPError, URLError
@@ -115,7 +116,9 @@ class GetRssForUser(webapp2.RequestHandler):
         #u.put()  # Data Store Disable ###########
 
     def get(self):
-        logging.info("reverse=" + self.request.get('reverse','off'))
+        newurl = 'http://192.241.196.202/getrss?' + urllib.urlencode(self.request.params)
+        return self.redirect(newurl, True)
+        # logging.info("reverse=" + self.request.get('reverse','off'))
         ua = self.request.headers['User-Agent']
         if "Yahoo Pipes" in ua:
             logging.info("Blocked Yahoo Pipes")
@@ -170,6 +173,15 @@ class GetRssForUser(webapp2.RequestHandler):
 application = webapp2.WSGIApplication([
     ('/getrss', GetRssForUser),
 ], debug=False)
+
+# # application = webapp2.WSGIApplication([
+# #     ('/getrss', webapp2.RedirectHandler.new_factory('http://192.241.196.202/getrss', permanent=True))
+# # ], debug=False)
+
+
+# application = webapp2.WSGIApplication([
+#     webapp2.Route('/getrss', webapp2.RedirectHandler, defaults={'_uri':'http://192.241.196.202/getrss'}),    
+# ], debug=False)
 
 atom_template_file = 'atom.tpl'
 env = Environment(autoescape=True,
